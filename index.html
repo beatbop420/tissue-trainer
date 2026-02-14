@@ -1,0 +1,1984 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tissue Recovery Trainer</title>
+
+    <!-- Same font as your dashboard -->
+    <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        /* ========== RESET & BASE ========== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Lexend', sans-serif;
+            background-color: #1a1a2e;
+            color: #e0e0e0;
+            line-height: 1.6;
+            letter-spacing: 0.3px;
+            height: 100vh;
+            overflow: hidden; /* the app fills the screen, no page scroll */
+        }
+
+        /* ========== COLOR VARIABLES ========== */
+        :root {
+            --bg-dark: #1a1a2e;
+            --bg-card: #16213e;
+            --bg-card-hover: #1a2744;
+            --accent-red: #e94560;
+            --accent-green: #4ecca3;
+            --accent-yellow: #ffcc00;
+            --accent-blue: #4ea8de;
+            --text-primary: #e0e0e0;
+            --text-muted: #a0a0b0;
+            --text-bright: #ffffff;
+            --border-subtle: #2a3a5c;
+        }
+
+        /* ========== APP LAYOUT ========== */
+        /* The whole app is a vertical stack: header, middle (sidebar + main), footer */
+        .app {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        /* ========== HEADER ========== */
+        .app-header {
+            background: linear-gradient(135deg, #0f3460, #16213e);
+            border-bottom: 2px solid var(--accent-red);
+            padding: 14px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-shrink: 0; /* don't let it squish */
+        }
+
+        .app-header h1 {
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--accent-red);
+            letter-spacing: 2px;
+        }
+
+        .header-controls {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        /* Mode toggle (Learn / Test) */
+        .mode-toggle {
+            display: flex;
+            background: var(--bg-dark);
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid var(--border-subtle);
+        }
+
+        .mode-btn {
+            padding: 8px 20px;
+            border: none;
+            background: transparent;
+            color: var(--text-muted);
+            font-family: 'Lexend', sans-serif;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .mode-btn.active {
+            background: var(--accent-red);
+            color: var(--text-bright);
+        }
+
+        .mode-btn:hover:not(.active) {
+            background: var(--bg-card-hover);
+            color: var(--text-primary);
+        }
+
+        /* Case selector dropdown */
+        .case-select {
+            padding: 8px 14px;
+            background: var(--bg-dark);
+            color: var(--text-primary);
+            border: 1px solid var(--border-subtle);
+            border-radius: 8px;
+            font-family: 'Lexend', sans-serif;
+            font-size: 14px;
+            cursor: pointer;
+        }
+
+        /* ========== MIDDLE AREA (sidebar + main) ========== */
+        .app-middle {
+            display: flex;
+            flex: 1; /* takes up all remaining space */
+            overflow: hidden;
+        }
+
+        /* ========== SIDEBAR ========== */
+        .sidebar {
+            width: 280px;
+            background: var(--bg-card);
+            border-right: 1px solid var(--border-subtle);
+            padding: 16px;
+            overflow-y: auto;
+            flex-shrink: 0;
+        }
+
+        .sidebar h2 {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            margin-bottom: 12px;
+        }
+
+        /* Each phase in the sidebar */
+        .phase-item {
+            padding: 10px 12px;
+            margin-bottom: 4px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 13px;
+            font-weight: 400;
+        }
+
+        .phase-item:hover {
+            background: var(--bg-card-hover);
+        }
+
+        /* Phase status icons */
+        .phase-icon {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+
+        .phase-item.completed .phase-icon {
+            background: var(--accent-green);
+            color: #000;
+        }
+
+        .phase-item.current .phase-icon {
+            background: var(--accent-red);
+            color: #fff;
+        }
+
+        .phase-item.upcoming .phase-icon {
+            background: var(--border-subtle);
+            color: var(--text-muted);
+        }
+
+        .phase-item.current {
+            background: rgba(233, 69, 96, 0.15);
+            border-left: 3px solid var(--accent-red);
+            color: var(--text-bright);
+            font-weight: 500;
+        }
+
+        .phase-item.completed {
+            color: var(--accent-green);
+        }
+
+        .phase-item.upcoming {
+            color: var(--text-muted);
+        }
+
+        .phase-name {
+            flex: 1;
+            line-height: 1.3;
+        }
+
+        /* Step count badge */
+        .phase-step-count {
+            font-size: 11px;
+            color: var(--text-muted);
+            background: var(--bg-dark);
+            padding: 2px 7px;
+            border-radius: 10px;
+        }
+
+        /* ========== MAIN CONTENT ========== */
+        .main-content {
+            flex: 1;
+            padding: 24px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        /* Location badge at the top */
+        .location-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(78, 168, 222, 0.15);
+            color: var(--accent-blue);
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 500;
+            align-self: flex-start;
+        }
+
+        /* Current step card */
+        .step-card {
+            background: var(--bg-card);
+            border-radius: 12px;
+            padding: 24px;
+            border-left: 4px solid var(--accent-red);
+        }
+
+        .step-card h2 {
+            font-size: 14px;
+            color: var(--text-muted);
+            font-weight: 400;
+            margin-bottom: 4px;
+        }
+
+        .step-card h3 {
+            font-size: 20px;
+            color: var(--text-bright);
+            font-weight: 600;
+            margin-bottom: 12px;
+        }
+
+        .step-detail {
+            color: var(--text-primary);
+            font-size: 15px;
+            line-height: 1.7;
+            margin-bottom: 16px;
+        }
+
+        .step-tips {
+            background: rgba(78, 204, 163, 0.1);
+            border-left: 3px solid var(--accent-green);
+            padding: 12px 16px;
+            border-radius: 0 8px 8px 0;
+            font-size: 14px;
+            color: var(--accent-green);
+        }
+
+        .step-tips strong {
+            display: block;
+            margin-bottom: 4px;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        /* ========== FEEDBACK PANEL ========== */
+        .feedback-panel {
+            border-radius: 12px;
+            padding: 18px 20px;
+            font-size: 15px;
+            line-height: 1.6;
+            display: none; /* hidden until feedback is shown */
+        }
+
+        .feedback-panel.visible {
+            display: block;
+        }
+
+        .feedback-panel.correct {
+            background: rgba(78, 204, 163, 0.12);
+            border: 1px solid var(--accent-green);
+            color: var(--accent-green);
+        }
+
+        .feedback-panel.warning {
+            background: rgba(255, 204, 0, 0.1);
+            border: 1px solid var(--accent-yellow);
+            color: var(--accent-yellow);
+        }
+
+        .feedback-panel.blocked {
+            background: rgba(233, 69, 96, 0.12);
+            border: 1px solid var(--accent-red);
+            color: var(--accent-red);
+        }
+
+        .feedback-title {
+            font-weight: 600;
+            font-size: 16px;
+            margin-bottom: 6px;
+        }
+
+        .feedback-buttons {
+            margin-top: 12px;
+            display: flex;
+            gap: 10px;
+        }
+
+        .feedback-btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 8px;
+            font-family: 'Lexend', sans-serif;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .feedback-btn.primary {
+            background: var(--accent-green);
+            color: #000;
+        }
+
+        .feedback-btn.secondary {
+            background: var(--border-subtle);
+            color: var(--text-primary);
+        }
+
+        .feedback-btn:hover {
+            opacity: 0.85;
+            transform: translateY(-1px);
+        }
+
+        /* ========== ACTION BUTTONS (Learn Mode) ========== */
+        .action-section {
+            margin-top: auto; /* pushes to bottom */
+        }
+
+        .action-section h4 {
+            font-size: 12px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            margin-bottom: 10px;
+        }
+
+        .action-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .step-btn {
+            padding: 10px 16px;
+            background: var(--bg-card);
+            color: var(--text-primary);
+            border: 1px solid var(--border-subtle);
+            border-radius: 8px;
+            font-family: 'Lexend', sans-serif;
+            font-size: 13px;
+            font-weight: 400;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: left;
+            flex: 1 1 calc(50% - 4px);
+            min-width: 200px;
+        }
+
+        .step-btn:hover {
+            background: var(--bg-card-hover);
+            border-color: var(--accent-blue);
+            color: var(--text-bright);
+            transform: translateY(-1px);
+        }
+
+        .step-btn.recommended {
+            border-color: var(--accent-green);
+            box-shadow: 0 0 0 1px rgba(78, 204, 163, 0.3);
+        }
+
+        .step-btn.recommended::before {
+            content: "★ ";
+            color: var(--accent-green);
+        }
+
+        .step-btn.done {
+            opacity: 0.4;
+            cursor: default;
+            text-decoration: line-through;
+        }
+
+        .step-btn.done:hover {
+            transform: none;
+            background: var(--bg-card);
+            border-color: var(--border-subtle);
+        }
+
+        /* ========== TEST MODE - MULTIPLE CHOICE ========== */
+        .mc-option {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 14px 18px;
+            background: var(--bg-card);
+            border: 2px solid var(--border-subtle);
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        .mc-option:hover {
+            border-color: var(--accent-blue);
+            background: var(--bg-card-hover);
+        }
+
+        .mc-option.selected {
+            border-color: var(--accent-blue);
+            background: rgba(78, 168, 222, 0.1);
+        }
+
+        .mc-option.correct-answer {
+            border-color: var(--accent-green);
+            background: rgba(78, 204, 163, 0.15);
+        }
+
+        .mc-option.wrong-answer {
+            border-color: var(--accent-red);
+            background: rgba(233, 69, 96, 0.15);
+        }
+
+        .mc-letter {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: var(--border-subtle);
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 13px;
+            flex-shrink: 0;
+        }
+
+        .mc-option.selected .mc-letter {
+            background: var(--accent-blue);
+            color: #fff;
+        }
+
+        .mc-option.correct-answer .mc-letter {
+            background: var(--accent-green);
+            color: #000;
+        }
+
+        .mc-option.wrong-answer .mc-letter {
+            background: var(--accent-red);
+            color: #fff;
+        }
+
+        .submit-btn {
+            margin-top: 12px;
+            padding: 12px 32px;
+            background: var(--accent-red);
+            color: var(--text-bright);
+            border: none;
+            border-radius: 8px;
+            font-family: 'Lexend', sans-serif;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .submit-btn:hover {
+            opacity: 0.9;
+            transform: translateY(-1px);
+        }
+
+        .submit-btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* ========== FOOTER / PROGRESS BAR ========== */
+        .app-footer {
+            background: var(--bg-card);
+            border-top: 1px solid var(--border-subtle);
+            padding: 12px 24px;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .progress-text {
+            font-size: 13px;
+            color: var(--text-muted);
+            white-space: nowrap;
+        }
+
+        .progress-bar-track {
+            flex: 1;
+            height: 8px;
+            background: var(--bg-dark);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .progress-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--accent-red), var(--accent-green));
+            border-radius: 4px;
+            transition: width 0.4s ease;
+            width: 0%;
+        }
+
+        .score-display {
+            font-size: 13px;
+            color: var(--accent-green);
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        /* ========== RESULTS SCREEN (Test Mode End) ========== */
+        .results-screen {
+            text-align: center;
+            padding: 40px;
+        }
+
+        .results-screen h2 {
+            font-size: 28px;
+            color: var(--text-bright);
+            margin-bottom: 8px;
+        }
+
+        .results-score {
+            font-size: 64px;
+            font-weight: 700;
+            margin: 20px 0;
+        }
+
+        .results-score.great {
+            color: var(--accent-green);
+        }
+
+        .results-score.okay {
+            color: var(--accent-yellow);
+        }
+
+        .results-score.needs-work {
+            color: var(--accent-red);
+        }
+
+        .results-stats {
+            display: flex;
+            justify-content: center;
+            gap: 40px;
+            margin: 24px 0;
+        }
+
+        .results-stat {
+            text-align: center;
+        }
+
+        .results-stat .stat-num {
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--text-bright);
+        }
+
+        .results-stat .stat-label {
+            font-size: 12px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .results-missed {
+            text-align: left;
+            margin-top: 30px;
+            max-width: 700px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .results-missed h3 {
+            font-size: 16px;
+            color: var(--accent-red);
+            margin-bottom: 12px;
+        }
+
+        .missed-item {
+            background: var(--bg-card);
+            padding: 14px 18px;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            border-left: 3px solid var(--accent-red);
+        }
+
+        .missed-item .you-said {
+            color: var(--accent-red);
+            font-size: 13px;
+        }
+
+        .missed-item .correct-was {
+            color: var(--accent-green);
+            font-size: 13px;
+            margin-top: 4px;
+        }
+
+        .missed-item .why-text {
+            color: var(--text-muted);
+            font-size: 13px;
+            margin-top: 6px;
+            font-style: italic;
+        }
+
+        .restart-btn {
+            margin-top: 24px;
+            padding: 14px 40px;
+            background: var(--accent-red);
+            color: var(--text-bright);
+            border: none;
+            border-radius: 10px;
+            font-family: 'Lexend', sans-serif;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .restart-btn:hover {
+            opacity: 0.9;
+            transform: translateY(-2px);
+        }
+
+        /* ========== START SCREEN ========== */
+        .start-screen {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 60px 40px;
+            text-align: center;
+        }
+
+        .start-screen h2 {
+            font-size: 32px;
+            color: var(--text-bright);
+            margin-bottom: 12px;
+        }
+
+        .start-screen p {
+            color: var(--text-muted);
+            font-size: 16px;
+            max-width: 600px;
+            margin-bottom: 30px;
+        }
+
+        .start-modes {
+            display: flex;
+            gap: 20px;
+        }
+
+        .start-mode-card {
+            background: var(--bg-card);
+            border: 2px solid var(--border-subtle);
+            border-radius: 16px;
+            padding: 30px 24px;
+            width: 260px;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-align: center;
+        }
+
+        .start-mode-card:hover {
+            border-color: var(--accent-red);
+            transform: translateY(-4px);
+            box-shadow: 0 8px 30px rgba(233, 69, 96, 0.2);
+        }
+
+        .start-mode-card h3 {
+            font-size: 20px;
+            color: var(--text-bright);
+            margin-bottom: 8px;
+        }
+
+        .start-mode-card p {
+            font-size: 14px;
+            color: var(--text-muted);
+            margin-bottom: 0;
+        }
+
+        .start-mode-icon {
+            font-size: 40px;
+            margin-bottom: 12px;
+        }
+
+        /* ========== SCROLLBAR STYLING ========== */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--bg-dark);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--border-subtle);
+            border-radius: 3px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--text-muted);
+        }
+
+        /* ========== RESPONSIVE ========== */
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 220px;
+            }
+            .step-btn {
+                flex: 1 1 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="app">
+    <!-- ========== HEADER ========== -->
+    <header class="app-header">
+        <h1>TISSUE RECOVERY TRAINER</h1>
+        <div class="header-controls">
+            <div class="mode-toggle" id="modeToggle" style="display:none;">
+                <button class="mode-btn active" data-mode="learn" onclick="switchMode('learn')">LEARN</button>
+                <button class="mode-btn" data-mode="test" onclick="switchMode('test')">TEST</button>
+            </div>
+            <select class="case-select" id="caseSelect" style="display:none;" onchange="changeCase(this.value)">
+                <!-- Options filled by JS -->
+            </select>
+        </div>
+    </header>
+
+    <!-- ========== MIDDLE: sidebar + main content ========== -->
+    <div class="app-middle">
+        <!-- Sidebar (hidden on start screen) -->
+        <aside class="sidebar" id="sidebar" style="display:none;"></aside>
+
+        <!-- Main content area -->
+        <main class="main-content" id="mainContent">
+            <!-- Start screen shown by default -->
+            <div class="start-screen" id="startScreen">
+                <h2>Tissue Recovery Trainer</h2>
+                <p>Practice the full procedure for tissue recovery — from PA room assessment all the way through cleanup. Pick a mode to get started.</p>
+                <div class="start-modes">
+                    <div class="start-mode-card" onclick="startApp('learn')">
+                        <div class="start-mode-icon">&#x1F9EA;</div>
+                        <h3>Learn Mode</h3>
+                        <p>Free play with coaching. Pick any step — I'll tell you if there's a better order and why.</p>
+                    </div>
+                    <div class="start-mode-card" onclick="startApp('test')">
+                        <div class="start-mode-icon">&#x1F4DD;</div>
+                        <h3>Test Mode</h3>
+                        <p>Multiple choice quiz. I'll ask you what comes next and keep score.</p>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- ========== FOOTER ========== -->
+    <footer class="app-footer" id="appFooter" style="display:none;">
+        <span class="progress-text" id="progressText">Step 0 of 0</span>
+        <div class="progress-bar-track">
+            <div class="progress-bar-fill" id="progressFill"></div>
+        </div>
+        <span class="score-display" id="scoreDisplay"></span>
+    </footer>
+</div>
+
+<script>
+// ========================================================================
+// PROCEDURE DATA
+// This is the "brain" of the simulator. All the steps, coaching text,
+// and pro tips live here. To add a new case type (bones, tendons, etc.),
+// just add another key to this object — the UI reads it automatically.
+// ========================================================================
+
+const PROCEDURES = {
+    "skin_only": {
+        name: "Skin-Only Recovery",
+        description: "Split-thickness skin graft recovery from a deceased donor.",
+        phases: [
+            // ==================== PHASE 1: PA ROOM ====================
+            {
+                id: "pa_room",
+                name: "PA Room — Physical Assessment",
+                location: "Physical Assessment Room",
+                steps: [
+                    {
+                        id: "pa_01",
+                        action: "Review donor chart and authorization",
+                        detail: "Verify consent/authorization specifically lists skin. Confirm donor ID matches the chart. Check medical/social history for contraindications — IV drug use, high-risk behavior, systemic infection, sepsis, autoimmune skin conditions. Screen for Hep B/C, HIV, CJD risk factors.",
+                        why: "Paperwork first — always. If authorization doesn't cover skin, or medical history shows a contraindication, you stop here. Can't recover tissue without proper consent.",
+                        tips: "Check for research consent vs. transplant consent — they're different authorizations. Also check for recent tattoos/piercings within your OPO's exclusion window (often 12 months).",
+                        critical: true,
+                        alternatives: []
+                    },
+                    {
+                        id: "pa_02",
+                        action: "Verify donor identification",
+                        detail: "Two-point ID check: match wristband to paperwork — name, DOB, case number. If wristband is missing, follow your OPO's reidentification protocol.",
+                        why: "Must confirm identity before any physical contact. Wrong-donor recovery is a never-event.",
+                        tips: "Some OPOs require two-person verification. Know your policy.",
+                        critical: true,
+                        alternatives: []
+                    },
+                    {
+                        id: "pa_03",
+                        action: "Full skin inspection",
+                        detail: "Head-to-toe visual scan under full lighting. Check for: jaundice, cyanosis, rashes, open wounds, burns, pressure ulcers, bruising. Then inspect specifically for tattoos (map locations, note if fresh vs. healed), lesions, suspicious moles (asymmetry, irregular borders, color variation, >6mm), needle tracks, and skin cancer signs. Also assess skin turgor, hydration, thickness, edema, and surgical scars crossing recovery areas.",
+                        why: "This full inspection determines what's recoverable and what's not. Major issues rule out recovery entirely. Tattoo/lesion locations directly affect your cut plan. Skin quality determines if grafts will be transplantable.",
+                        tips: "Full brightness lights — subtle conditions get missed in dim rooms. Check sneaky tattoo spots: ankles, behind ears, fingers, inner lip. Pinch forearm skin — tenting means dehydrated, boggy/pitting means edematous. Both affect graft quality.",
+                        critical: true,
+                        alternatives: []
+                    },
+                    {
+                        id: "pa_04",
+                        action: "Take body measurements",
+                        detail: "Measure height (crown to heel), weight (from records or scale), and limb circumferences (upper arms, thighs, calves at widest points).",
+                        why: "Height + weight = estimated body surface area = how much skin you'll get. Limb circumferences determine dermatome pass widths and how many passes per limb.",
+                        tips: "Write measurements on your worksheet immediately — don't try to remember them. Use consistent landmarks (midpoint of each limb segment).",
+                        critical: false,
+                        alternatives: []
+                    },
+                    {
+                        id: "pa_05",
+                        action: "Document findings and take photos",
+                        detail: "Photograph the donor per OPO protocol. Document all findings on the PA worksheet. Note any areas excluded from recovery and why.",
+                        why: "Documentation must be done before leaving the PA room. This is the permanent record and informs your recovery plan.",
+                        tips: "Photograph tattoos, lesions, and abnormalities with a ruler for scale. Label/sequence photos so they match your written documentation.",
+                        critical: true,
+                        alternatives: []
+                    },
+                    {
+                        id: "pa_06",
+                        action: "Make go/no-go decision",
+                        detail: "Based on all findings: proceed with full recovery, proceed with modified recovery (exclude certain areas), or cancel. Communicate your decision.",
+                        why: "This is the gate. Everything before was information gathering. Now you commit or walk away. Do NOT proceed to prep with unresolved concerns.",
+                        tips: "If unsure, call your medical director. That's what they're there for. It's never wrong to ask.",
+                        critical: true,
+                        alternatives: []
+                    }
+                ]
+            },
+
+            // ==================== PHASE 2: CLEANING & PREP ====================
+            {
+                id: "cleaning_prep",
+                name: "Cleaning & Prep",
+                location: "Prep Area",
+                steps: [
+                    {
+                        id: "prep_01",
+                        action: "Gather prep supplies",
+                        detail: "Collect everything: Betadine or ChloraPrep (per OPO protocol), razors/clippers, towels, prep sponges, trash bag for linens.",
+                        why: "Gather everything before starting so you don't leave mid-prep. Leaving and returning introduces contamination risk.",
+                        tips: "Lay supplies out in order of use. Saves time and prevents mix-ups.",
+                        critical: false,
+                        alternatives: []
+                    },
+                    {
+                        id: "prep_02",
+                        action: "Remove hospital lines, dressings, and clothing",
+                        detail: "Remove IV lines, catheters, EKG leads, tape residue, hospital gown, all dressings. Keep the identification band on.",
+                        why: "Must remove everything before cleaning. Tape residue under a graft = contaminated tissue. Lines left in = holes in your recovery field.",
+                        tips: "Use adhesive remover for stubborn tape. Be careful with central lines — note the site for your records.",
+                        critical: true,
+                        alternatives: []
+                    },
+                    {
+                        id: "prep_03",
+                        action: "Shave/clip hair from recovery areas",
+                        detail: "Clip or shave all planned recovery sites — legs (anterior and posterior), back, arms if authorized.",
+                        why: "Hair interferes with the dermatome blade and contaminates grafts. Must be done BEFORE the antiseptic scrub so the scrub reaches bare skin.",
+                        tips: "Clippers first for heavy hair, then razors. Shave WITH the grain — nicks damage the graft site.",
+                        critical: false,
+                        alternatives: []
+                    },
+                    {
+                        id: "prep_04",
+                        action: "Perform antiseptic scrub (double scrub)",
+                        detail: "Apply Betadine or ChloraPrep to all recovery areas. Scrub in circular motions from center outward. Allow full dwell time (2-3 min for Betadine). Repeat for a complete second scrub. Blot excess if your protocol requires it — blot, don't wipe.",
+                        why: "Double scrub is standard surgical protocol. Circular outward pattern prevents pushing bacteria into clean areas. Dwell time lets the antiseptic actually kill bacteria. Two scrubs significantly reduces bioburden beyond a single application.",
+                        tips: "Don't rush the dwell time — use it to review your cut plan. Some OPOs require three scrubs. Skin should be visibly wet, not just damp. Get into folds and creases.",
+                        critical: true,
+                        alternatives: []
+                    }
+                ]
+            },
+
+            // ==================== PHASE 3: TRANSPORT TO OR ====================
+            {
+                id: "transport",
+                name: "Transport to OR",
+                location: "Transition to OR",
+                steps: [
+                    {
+                        id: "trans_01",
+                        action: "Verify OR is ready",
+                        detail: "Confirm the OR suite is available, table is set, and all equipment (dermatome, back table, sterile supplies) has been pulled and is in the room.",
+                        why: "Don't move the donor until the room is ready. Prepped skin sitting in a hallway loses its prep over time and risks contamination.",
+                        tips: "Call ahead or physically check. Don't assume it's ready.",
+                        critical: true,
+                        alternatives: []
+                    },
+                    {
+                        id: "trans_02",
+                        action: "Cover and transport donor to OR",
+                        detail: "Place a clean (not sterile) sheet over the prepped donor. Move the stretcher to the OR — rails up, feet first, controlled speed. Watch corners and doorframes.",
+                        why: "The cover protects prepped skin from airborne contamination during the move. Bumping into things can damage prepped skin areas.",
+                        tips: "Coordinate with anyone helping. Communicate going through doors. Don't drag the sheet on the floor.",
+                        critical: false,
+                        alternatives: []
+                    },
+                    {
+                        id: "trans_03",
+                        action: "Transfer donor to OR table",
+                        detail: "Move donor from stretcher to OR table. Use proper body mechanics and team lift. Position supine (face up) for anterior recovery.",
+                        why: "Donor needs to be on the OR table before you can set up the sterile field. Supine because anterior work comes first.",
+                        tips: "Lock BOTH the OR table AND the stretcher before transferring. Center the body with limbs accessible from both sides.",
+                        critical: false,
+                        alternatives: []
+                    }
+                ]
+            },
+
+            // ==================== PHASE 4: GOWNING & GLOVING ====================
+            {
+                id: "gown_glove",
+                name: "Gowning & Gloving",
+                location: "OR Suite",
+                steps: [
+                    {
+                        id: "gg_01",
+                        action: "Perform surgical hand scrub and dry",
+                        detail: "Scrub hands and forearms — nail pick under nails, scrub each finger, hands, forearms. Full time: 3-5 min first scrub, 2-3 min subsequent. Dry with sterile towel from gown pack — one side per arm, then drop towel away from sterile field.",
+                        why: "Your hands go into sterile gloves that touch transplantable tissue. Inadequate scrub = contaminated gloves = contaminated tissue. Wet hands in gloves breed bacteria and tear easier.",
+                        tips: "Keep hands ABOVE elbows after scrubbing — prevents dirty water running back to clean hands. Count strokes or use a timer. Don't reuse towel sections.",
+                        critical: true,
+                        alternatives: []
+                    },
+                    {
+                        id: "gg_02",
+                        action: "Don sterile gown",
+                        detail: "Put on sterile gown (closed-gloving technique if possible). Have a non-scrubbed assistant tie the back.",
+                        why: "Gown before gloves — standard technique. Protects the sterile field from your body and clothing contamination.",
+                        tips: "Only the FRONT (chest to waist, shoulders to hands) is sterile. The back is NOT. Never turn your back to the sterile field.",
+                        critical: true,
+                        alternatives: []
+                    },
+                    {
+                        id: "gg_03",
+                        action: "Don sterile gloves (double glove)",
+                        detail: "Double-glove using closed-gloving technique. Outer gloves one size larger than inner pair. Check for holes immediately after donning.",
+                        why: "Double gloving is standard for tissue recovery. Inner glove protects YOU if the outer gets punctured by bone or instruments.",
+                        tips: "If a glove tears during the procedure, re-glove immediately — tissue is exposed to contamination.",
+                        critical: true,
+                        alternatives: []
+                    },
+                    {
+                        id: "gg_04",
+                        action: "Confirm sterile field awareness",
+                        detail: "Mental checkpoint: what IS sterile (your gowned front, gloved hands, back table once opened) and what ISN'T (OR table surface — that's what draping fixes).",
+                        why: "Many contamination breaks happen right after gowning because people lose track of what's sterile. This 10-second mental check prevents that.",
+                        tips: "If you're ever unsure whether something is sterile, treat it as NOT sterile. Re-gloving is cheaper than discarding tissue.",
+                        critical: false,
+                        alternatives: []
+                    }
+                ]
+            },
+
+            // ==================== PHASE 5: DRAPING ====================
+            {
+                id: "draping",
+                name: "Draping",
+                location: "OR Suite — At the Table",
+                steps: [
+                    {
+                        id: "drape_01",
+                        action: "Set up the back table",
+                        detail: "Open sterile back table pack. Organize instruments, basins, dermatome, blades, and packaging materials.",
+                        why: "Set up BEFORE draping the body so instruments are ready the moment draping is complete. Don't open packs after draping.",
+                        tips: "Organize logically: cutting instruments on one side, packaging on the other, dermatome and mineral oil within easy reach.",
+                        critical: false,
+                        alternatives: []
+                    },
+                    {
+                        id: "drape_02",
+                        action: "Drape the OR table and donor",
+                        detail: "Apply sterile drapes to the OR table (center outward, sterile side toward you). Then drape the donor — cover torso, head, and non-recovery areas. Only expose planned recovery sites. Secure with towel clips or adhesive edges. Apply Ioban/incise drape over recovery areas if your OPO uses them.",
+                        why: "Table draping creates the sterile perimeter. Body draping limits contamination from non-recovery skin. Incise drapes add another bacterial barrier directly on the skin.",
+                        tips: "Drapes should hang over table edges enough to block contamination from below — don't let them touch the floor. Smooth out ALL air bubbles on incise drapes or the dermatome will catch.",
+                        critical: true,
+                        alternatives: []
+                    },
+                    {
+                        id: "drape_03",
+                        action: "Final sterile field check",
+                        detail: "Visually verify: all non-recovery areas covered, drapes secure, no contamination breaks, back table organized, instruments accounted for.",
+                        why: "Last checkpoint before irreversible cutting. Once you cut, there's no going back. This is your 'before takeoff' checklist.",
+                        tips: "Take 10 seconds to just LOOK at everything. Catching a problem now saves 30 minutes of re-draping later.",
+                        critical: true,
+                        alternatives: []
+                    }
+                ]
+            },
+
+            // ==================== PHASE 6: SKIN RECOVERY ====================
+            {
+                id: "skin_recovery",
+                name: "Skin Recovery — Cutting",
+                location: "OR Suite — Sterile Field",
+                steps: [
+                    {
+                        id: "cut_01",
+                        action: "Set up dermatome and apply mineral oil",
+                        detail: "Set dermatome depth (typically 0.012-0.018 inches for split-thickness grafts) and width (3 or 4 inches depending on limb size). Then generously apply sterile mineral oil to the first recovery area — usually the anterior thighs.",
+                        why: "Depth and width must be set before cutting. Too thin = fragile graft. Too thick = won't take in transplant. Width must match the limb or you'll get uneven edges. Mineral oil lubricates so the dermatome glides — without it, the blade catches and tears the graft.",
+                        tips: "Verify depth with the actual gauge, not just the dial. Match width to your earlier limb measurements — when in doubt, go narrower. Pour mineral oil generously, re-oil between every pass.",
+                        critical: true,
+                        alternatives: []
+                    },
+                    {
+                        id: "cut_02",
+                        action: "Make dermatome passes — anterior legs",
+                        detail: "With donor supine, recover skin from anterior thighs and legs. Steady downward pressure, consistent speed. Assistant provides counter-traction. Hand off each graft to back table immediately — don't let them dry out or pile up.",
+                        why: "Anterior legs first because donor is already supine and they're the largest flat surface — easiest starting point. Grafts degrade the moment they leave the body, so prompt handling prevents drying and cell death.",
+                        tips: "Keep dermatome angle consistent. Lift smoothly at the end of each pass. Have assistant keep tension ahead of the blade. Lay grafts flat on damp sterile towels, skin side down (dermis up).",
+                        critical: true,
+                        alternatives: []
+                    },
+                    {
+                        id: "cut_03",
+                        action: "Make dermatome passes — anterior arms (if authorized)",
+                        detail: "If arms are authorized, recover anterior arm skin while donor is still supine.",
+                        why: "Arms done after legs while still supine — avoids repositioning unnecessarily.",
+                        tips: "Arms are curved and narrower. You may need to reduce dermatome width. Extra counter-traction needed — arms tend to roll.",
+                        critical: false,
+                        alternatives: []
+                    },
+                    {
+                        id: "cut_04",
+                        action: "Reposition donor to prone (face down)",
+                        detail: "Team lift to carefully turn donor prone for posterior recovery. Check that drapes stayed intact.",
+                        why: "Can't access back and posterior legs face up. All anterior work is done first to minimize handling.",
+                        tips: "Coordinate the turn. Protect the head. Drapes almost always shift during a turn — expect to fix them.",
+                        critical: true,
+                        alternatives: []
+                    },
+                    {
+                        id: "cut_05",
+                        action: "Re-prep and re-drape posterior surfaces",
+                        detail: "Re-apply drapes to posterior surfaces. Re-apply mineral oil to the new recovery areas.",
+                        why: "The turn introduces potential contamination. Re-draping restores your sterile field for the second half.",
+                        tips: "This is where contamination breaks commonly happen. Be meticulous — it's worth the extra two minutes.",
+                        critical: true,
+                        alternatives: []
+                    },
+                    {
+                        id: "cut_06",
+                        action: "Make dermatome passes — posterior legs",
+                        detail: "Recover skin from posterior thighs and calves. Same technique as anterior. Hand off grafts to back table immediately.",
+                        why: "Posterior legs are the largest posterior surface — same logic as starting with anterior legs on the front.",
+                        tips: "Calves are tricky because of the curve. Slow down your dermatome speed on curved surfaces.",
+                        critical: true,
+                        alternatives: []
+                    },
+                    {
+                        id: "cut_07",
+                        action: "Make dermatome passes — back",
+                        detail: "Recover skin from upper and lower back — the largest single flat area on the body.",
+                        why: "Back is done after posterior legs because legs are closer to the table edge and easier to access first from the side.",
+                        tips: "Use your widest dermatome setting. Watch for the spine — can't dermatome over bone. Stay lateral to the midline.",
+                        critical: true,
+                        alternatives: []
+                    },
+                    {
+                        id: "cut_08",
+                        action: "Final check of all recovery sites",
+                        detail: "Inspect all dermatomed surfaces. Verify you've recovered all authorized areas. Check for missed spots.",
+                        why: "Confirm recovery is complete before moving on. Much harder to go back after you've started packaging.",
+                        tips: "Count your grafts against expected yield. If numbers don't add up, check if you missed a section.",
+                        critical: false,
+                        alternatives: []
+                    }
+                ]
+            },
+
+            // ==================== PHASE 7: BACK TABLE ====================
+            {
+                id: "back_table",
+                name: "Back Table Processing",
+                location: "OR Suite — Back Table",
+                steps: [
+                    {
+                        id: "bt_01",
+                        action: "Organize and inspect all grafts",
+                        detail: "Lay out all grafts flat on moist sterile towels, separated by body region. Examine each for holes, tears, uneven thickness, contamination, hair, and retained fat. Trim fat from undersurface with scissors.",
+                        why: "Organization first so you can see everything. Then quality check — no point measuring a graft you're going to discard. Retained fat causes failure in the recipient.",
+                        tips: "Hold grafts up to the light to spot thin spots and holes. A small amount of fat trimming is normal. Track which graft came from where — some OPOs require region-specific packaging.",
+                        critical: true,
+                        alternatives: []
+                    },
+                    {
+                        id: "bt_02",
+                        action: "Measure each graft",
+                        detail: "Measure length and width in centimeters. Record dimensions. Calculate total square centimeters recovered.",
+                        why: "Measurements determine packaging, labeling, and total yield. Must happen after trimming (changes dimensions) but before packaging (can't measure once sealed).",
+                        tips: "Use a sterile ruler. Measure USABLE area only — exclude damaged edges.",
+                        critical: true,
+                        alternatives: []
+                    },
+                    {
+                        id: "bt_03",
+                        action: "Package grafts in storage medium",
+                        detail: "Place each graft in OPO-specified storage medium (saline gauze, antibiotic solution, cryoprotectant, etc.), then into packaging containers. Seal all containers — may involve inner and outer layers.",
+                        why: "The medium preserves cell viability during transport. Packaging maintains sterility through transport, processing, and storage.",
+                        tips: "Follow your OPO's exact protocol for medium type and quantity. Too much liquid = ice crystal damage during freezing. Too little = drying. No air bubbles in sealed packages. Partial seal = no seal.",
+                        critical: true,
+                        alternatives: []
+                    },
+                    {
+                        id: "bt_04",
+                        action: "Label all packages",
+                        detail: "Apply labels: donor ID, tissue type, body region, dimensions, date/time of recovery, coordinator name/ID, plus any other OPO-required info.",
+                        why: "Regulatory requirement. Unlabeled or mislabeled tissue WILL be discarded — wasting the entire recovery. Wrong label = wrong tissue given to a patient.",
+                        tips: "Double-check every label against your paperwork. This is one of the highest-consequence steps in the whole procedure.",
+                        critical: true,
+                        alternatives: []
+                    },
+                    {
+                        id: "bt_05",
+                        action: "Complete tissue recovery documentation",
+                        detail: "Fill out all recovery paperwork: tissue log, graft measurements, cultures taken, complications, total yield.",
+                        why: "Must be completed while details are fresh. This is a legal and regulatory record.",
+                        tips: "Don't wait until cleanup. Memory is unreliable after a long case.",
+                        critical: true,
+                        alternatives: []
+                    }
+                ]
+            },
+
+            // ==================== PHASE 8: CLEANUP & CLOSURE ====================
+            {
+                id: "cleanup",
+                name: "Cleanup & Closure",
+                location: "OR Suite",
+                steps: [
+                    {
+                        id: "clean_01",
+                        action: "Dress and restore donor",
+                        detail: "Cover all dermatomed surfaces with dressings (gauze, Kerlix, ACE bandages per protocol). Then place a clean gown or shroud on the donor per OPO and funeral home requirements.",
+                        why: "Restores the donor's dignity and appearance. Families may view the body — proper dressing ensures respectful presentation.",
+                        tips: "Wrap smoothly and evenly. Take your time. Treat the donor with the same respect you'd want for your own family.",
+                        critical: true,
+                        alternatives: []
+                    },
+                    {
+                        id: "clean_02",
+                        action: "Package tissue for transport",
+                        detail: "Place all sealed, labeled packages into the transport cooler with appropriate temperature maintenance (ice packs, cold packs per protocol).",
+                        why: "Tissue must be temperature-controlled from the moment it leaves the sterile field. Delays in cooling degrade quality.",
+                        tips: "Pre-cool the cooler. Packages should NOT directly touch ice — use barrier layers to prevent freeze damage.",
+                        critical: true,
+                        alternatives: []
+                    },
+                    {
+                        id: "clean_03",
+                        action: "Clean and decontaminate the OR",
+                        detail: "Dispose of sharps properly. Bag all biohazard waste. Wipe down surfaces. Return the room to ready state.",
+                        why: "Professional responsibility. You used the room, you clean it. Leaving a mess burns bridges with hospital OR staff.",
+                        tips: "Follow the facility's specific cleaning protocol. Different hospitals have different expectations.",
+                        critical: false,
+                        alternatives: []
+                    },
+                    {
+                        id: "clean_04",
+                        action: "Final review and transfer tissue",
+                        detail: "Review ALL paperwork one final time (forms, measurements, cultures, photos, authorization, tissue log). Then hand off the cooler to courier/transport — get a signature for chain of custody (name, signature, date, time).",
+                        why: "Last chance to catch documentation errors. Chain of custody is a regulatory requirement — gaps mean potential tissue discard.",
+                        tips: "Use a checklist. No signature on chain of custody = gap in the chain = tissue at risk of being discarded.",
+                        critical: true,
+                        alternatives: []
+                    },
+                    {
+                        id: "clean_05",
+                        action: "Debrief and self-assessment",
+                        detail: "Review how the case went. Note anything that went wrong, anything you'd do differently, questions for your supervisor.",
+                        why: "Every case teaches you something. Writing it down while it's fresh makes you better for the next one.",
+                        tips: "Not about being hard on yourself — it's about building expertise. Even experienced coordinators debrief.",
+                        critical: false,
+                        alternatives: []
+                    }
+                ]
+            }
+        ]
+    }
+};
+
+
+// ========================================================================
+// APP STATE
+// Tracks where the user is, what they've done, and scores for test mode
+// ========================================================================
+
+let state = {
+    screen: "start",          // "start", "active", "results"
+    mode: "learn",             // "learn" or "test"
+    currentProcedure: "skin_only",
+    currentPhaseIndex: 0,      // which phase we're in (0-based)
+    currentStepIndex: 0,       // which step is the "expected next" (0-based)
+    completedSteps: new Set(), // set of step IDs the user has completed
+    feedbackVisible: false,
+    feedbackType: "",          // "correct", "warning", "blocked"
+    feedbackMessage: "",
+    feedbackDetail: "",
+
+    // Test mode specific
+    testScore: 0,
+    testTotal: 0,
+    testMissed: [],            // array of {question, yourAnswer, correctAnswer, why}
+    testStartTime: null,
+    testAnswered: false,       // has the current question been answered?
+    testSelectedOption: null,  // index of selected MC option
+    testOptions: [],           // current MC options [{step, isCorrect}, ...]
+};
+
+
+// ========================================================================
+// HELPER FUNCTIONS
+// Small utilities used throughout the app
+// ========================================================================
+
+// Get the current procedure data object
+function getProcedure() {
+    return PROCEDURES[state.currentProcedure];
+}
+
+// Get the current phase object
+function getPhase(index) {
+    const proc = getProcedure();
+    if (index === undefined) index = state.currentPhaseIndex;
+    return proc.phases[index];
+}
+
+// Get total number of steps across all phases
+function getTotalSteps() {
+    return getProcedure().phases.reduce((sum, phase) => sum + phase.steps.length, 0);
+}
+
+// Get the "global" step number (e.g., step 15 of 47)
+function getGlobalStepNumber() {
+    const proc = getProcedure();
+    let count = 0;
+    for (let i = 0; i < state.currentPhaseIndex; i++) {
+        count += proc.phases[i].steps.length;
+    }
+    count += state.currentStepIndex;
+    return count;
+}
+
+// Count how many steps have been completed
+function getCompletedCount() {
+    return state.completedSteps.size;
+}
+
+// Check if a step is in the alternatives group of the expected step
+function isAlternative(stepId) {
+    const phase = getPhase();
+    const expectedStep = phase.steps[state.currentStepIndex];
+    if (!expectedStep) return false;
+
+    // Check if the chosen step is in the expected step's alternatives
+    if (expectedStep.alternatives && expectedStep.alternatives.includes(stepId)) {
+        return true;
+    }
+
+    // Also check if the expected step is in the CHOSEN step's alternatives
+    const chosenStep = phase.steps.find(s => s.id === stepId);
+    if (chosenStep && chosenStep.alternatives && chosenStep.alternatives.includes(expectedStep.id)) {
+        return true;
+    }
+
+    return false;
+}
+
+// Find which critical steps haven't been done yet and come before a given step
+function getSkippedCriticalSteps(chosenStepId) {
+    const phase = getPhase();
+    const chosenIndex = phase.steps.findIndex(s => s.id === chosenStepId);
+    const skipped = [];
+
+    for (let i = 0; i < chosenIndex; i++) {
+        const step = phase.steps[i];
+        if (step.critical && !state.completedSteps.has(step.id)) {
+            // Check if it's an alternative of something already done
+            let doneAsAlt = false;
+            if (step.alternatives) {
+                for (const altId of step.alternatives) {
+                    if (state.completedSteps.has(altId)) {
+                        doneAsAlt = true;
+                        break;
+                    }
+                }
+            }
+            if (!doneAsAlt) {
+                skipped.push(step);
+            }
+        }
+    }
+    return skipped;
+}
+
+// Shuffle an array (Fisher-Yates)
+function shuffle(arr) {
+    const a = [...arr];
+    for (let i = a.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+}
+
+
+// ========================================================================
+// RENDERING FUNCTIONS
+// These draw the UI. Called whenever state changes.
+// ========================================================================
+
+function render() {
+    if (state.screen === "start") {
+        renderStartScreen();
+    } else if (state.screen === "results") {
+        renderResultsScreen();
+    } else {
+        renderActiveScreen();
+    }
+}
+
+// ---------- Start Screen ----------
+function renderStartScreen() {
+    document.getElementById("sidebar").style.display = "none";
+    document.getElementById("appFooter").style.display = "none";
+    document.getElementById("modeToggle").style.display = "none";
+    document.getElementById("caseSelect").style.display = "none";
+
+    document.getElementById("mainContent").innerHTML = `
+        <div class="start-screen">
+            <h2>Tissue Recovery Trainer</h2>
+            <p>Practice the full procedure for tissue recovery — from PA room assessment through cleanup. Pick a mode to get started.</p>
+            <div class="start-modes">
+                <div class="start-mode-card" onclick="startApp('learn')">
+                    <div class="start-mode-icon">&#x1F9EA;</div>
+                    <h3>Learn Mode</h3>
+                    <p>Free play with coaching. Pick any step — I'll tell you if there's a better order and why.</p>
+                </div>
+                <div class="start-mode-card" onclick="startApp('test')">
+                    <div class="start-mode-icon">&#x1F4DD;</div>
+                    <h3>Test Mode</h3>
+                    <p>Multiple choice quiz. I'll ask you what comes next and keep score.</p>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+// ---------- Active Screen (Learn or Test) ----------
+function renderActiveScreen() {
+    // Show sidebar, footer, mode toggle
+    document.getElementById("sidebar").style.display = "block";
+    document.getElementById("appFooter").style.display = "flex";
+    document.getElementById("modeToggle").style.display = "flex";
+    document.getElementById("caseSelect").style.display = "block";
+
+    renderSidebar();
+    renderMainArea();
+    renderFooter();
+    renderModeToggle();
+    renderCaseSelect();
+}
+
+// ---------- Sidebar ----------
+function renderSidebar() {
+    const proc = getProcedure();
+    const sidebar = document.getElementById("sidebar");
+
+    let html = `<h2>Phases</h2>`;
+
+    proc.phases.forEach((phase, i) => {
+        // Figure out the status of this phase
+        let status = "upcoming";
+        if (i < state.currentPhaseIndex) status = "completed";
+        else if (i === state.currentPhaseIndex) status = "current";
+
+        // Count completed steps in this phase
+        const doneInPhase = phase.steps.filter(s => state.completedSteps.has(s.id)).length;
+        const totalInPhase = phase.steps.length;
+
+        // The icon shows the phase number or a checkmark
+        const iconContent = status === "completed" ? "&#x2713;" : (i + 1);
+
+        html += `
+            <div class="phase-item ${status}" onclick="jumpToPhase(${i})" title="${phase.name}">
+                <div class="phase-icon">${iconContent}</div>
+                <span class="phase-name">${phase.name}</span>
+                <span class="phase-step-count">${doneInPhase}/${totalInPhase}</span>
+            </div>
+        `;
+    });
+
+    sidebar.innerHTML = html;
+}
+
+// ---------- Main Content Area ----------
+function renderMainArea() {
+    const mainContent = document.getElementById("mainContent");
+    const phase = getPhase();
+
+    // Check if we've completed all phases
+    if (state.currentPhaseIndex >= getProcedure().phases.length) {
+        if (state.mode === "test") {
+            state.screen = "results";
+            render();
+            return;
+        }
+        // Learn mode completion
+        mainContent.innerHTML = `
+            <div class="start-screen">
+                <h2>Case Complete!</h2>
+                <p>You've gone through all steps of the ${getProcedure().name} procedure. Nice work!</p>
+                <button class="restart-btn" onclick="resetAndRestart()">Start Over</button>
+            </div>
+        `;
+        return;
+    }
+
+    const expectedStep = phase.steps[state.currentStepIndex];
+
+    // Location badge
+    let html = `<div class="location-badge">&#x1F4CD; ${phase.location}</div>`;
+
+    // Current step info card (shows the expected step in learn mode, or a question prompt in test mode)
+    if (state.mode === "learn") {
+        html += renderLearnContent(phase, expectedStep);
+    } else {
+        html += renderTestContent(phase, expectedStep);
+    }
+
+    mainContent.innerHTML = html;
+}
+
+// ---------- Learn Mode Content ----------
+function renderLearnContent(phase, expectedStep) {
+    let html = "";
+
+    // Step card showing where you are
+    html += `
+        <div class="step-card">
+            <h2>Phase ${state.currentPhaseIndex + 1}: ${phase.name} — Step ${state.currentStepIndex + 1} of ${phase.steps.length}</h2>
+            <h3>What do you want to do next?</h3>
+            <p class="step-detail">Choose a step below. The recommended next step is marked with a star, but you can pick any step to see what happens.</p>
+        </div>
+    `;
+
+    // Feedback panel (shown after a choice)
+    html += renderFeedbackPanel();
+
+    // Action buttons — one for each step in this phase
+    html += `<div class="action-section"><h4>Available Steps</h4><div class="action-grid">`;
+
+    phase.steps.forEach((step, i) => {
+        const isDone = state.completedSteps.has(step.id);
+        const isRecommended = (i === state.currentStepIndex) && !isDone;
+
+        let classes = "step-btn";
+        if (isDone) classes += " done";
+        else if (isRecommended) classes += " recommended";
+
+        html += `<button class="${classes}" ${isDone ? "disabled" : ""} onclick="handleLearnChoice('${step.id}')">${step.action}</button>`;
+    });
+
+    html += `</div></div>`;
+    return html;
+}
+
+// ---------- Test Mode Content ----------
+function renderTestContent(phase, expectedStep) {
+    let html = "";
+
+    html += `
+        <div class="step-card">
+            <h2>Phase ${state.currentPhaseIndex + 1}: ${phase.name} — Question ${state.testTotal + 1}</h2>
+            <h3>What should you do next?</h3>
+            <p class="step-detail">Select the correct next step in the procedure.</p>
+        </div>
+    `;
+
+    // Generate MC options if not already generated for this question
+    if (state.testOptions.length === 0) {
+        generateTestOptions(phase, expectedStep);
+    }
+
+    // Render the MC options
+    const letters = ["A", "B", "C", "D"];
+    state.testOptions.forEach((opt, i) => {
+        let classes = "mc-option";
+        if (state.testAnswered) {
+            if (opt.isCorrect) classes += " correct-answer";
+            else if (i === state.testSelectedOption) classes += " wrong-answer";
+        } else if (i === state.testSelectedOption) {
+            classes += " selected";
+        }
+
+        html += `
+            <div class="${classes}" onclick="selectTestOption(${i})">
+                <div class="mc-letter">${letters[i]}</div>
+                <span>${opt.step.action}</span>
+            </div>
+        `;
+    });
+
+    // Submit / Next button
+    if (!state.testAnswered) {
+        html += `<button class="submit-btn" id="submitBtn" ${state.testSelectedOption === null ? "disabled" : ""} onclick="submitTestAnswer()">Submit Answer</button>`;
+    } else {
+        // Show feedback
+        html += renderFeedbackPanel();
+        html += `<button class="submit-btn" onclick="advanceAfterTest()">Next Step</button>`;
+    }
+
+    return html;
+}
+
+// ---------- Feedback Panel ----------
+function renderFeedbackPanel() {
+    if (!state.feedbackVisible) return "";
+
+    return `
+        <div class="feedback-panel visible ${state.feedbackType}">
+            <div class="feedback-title">${state.feedbackMessage}</div>
+            <div>${state.feedbackDetail}</div>
+            ${state.feedbackType === "warning" ? `
+                <div class="feedback-buttons">
+                    <button class="feedback-btn primary" onclick="acceptWarningAndContinue()">Got it, continue</button>
+                </div>
+            ` : ""}
+            ${state.feedbackType === "blocked" ? `
+                <div class="feedback-buttons">
+                    <button class="feedback-btn primary" onclick="dismissFeedback()">OK, let me fix that</button>
+                </div>
+            ` : ""}
+        </div>
+    `;
+}
+
+// ---------- Footer ----------
+function renderFooter() {
+    const total = getTotalSteps();
+    const done = getCompletedCount();
+    const pct = total > 0 ? Math.round((done / total) * 100) : 0;
+
+    document.getElementById("progressText").textContent = `Step ${done} of ${total} (${pct}%)`;
+    document.getElementById("progressFill").style.width = pct + "%";
+
+    if (state.mode === "test") {
+        document.getElementById("scoreDisplay").textContent = `Score: ${state.testScore}/${state.testTotal}`;
+    } else {
+        document.getElementById("scoreDisplay").textContent = "";
+    }
+}
+
+// ---------- Mode Toggle ----------
+function renderModeToggle() {
+    document.querySelectorAll(".mode-btn").forEach(btn => {
+        btn.classList.toggle("active", btn.dataset.mode === state.mode);
+    });
+}
+
+// ---------- Case Select Dropdown ----------
+function renderCaseSelect() {
+    const sel = document.getElementById("caseSelect");
+    sel.innerHTML = "";
+    Object.keys(PROCEDURES).forEach(key => {
+        const opt = document.createElement("option");
+        opt.value = key;
+        opt.textContent = PROCEDURES[key].name;
+        opt.selected = key === state.currentProcedure;
+        sel.appendChild(opt);
+    });
+}
+
+// ---------- Results Screen (Test Mode End) ----------
+function renderResultsScreen() {
+    document.getElementById("sidebar").style.display = "none";
+    document.getElementById("appFooter").style.display = "none";
+
+    const pct = state.testTotal > 0 ? Math.round((state.testScore / state.testTotal) * 100) : 0;
+    let scoreClass = "great";
+    if (pct < 70) scoreClass = "needs-work";
+    else if (pct < 90) scoreClass = "okay";
+
+    const elapsed = Math.round((Date.now() - state.testStartTime) / 1000);
+    const mins = Math.floor(elapsed / 60);
+    const secs = elapsed % 60;
+
+    let missedHtml = "";
+    if (state.testMissed.length > 0) {
+        missedHtml = `<div class="results-missed"><h3>Questions You Missed</h3>`;
+        state.testMissed.forEach(m => {
+            missedHtml += `
+                <div class="missed-item">
+                    <div class="you-said">Your answer: ${m.yourAnswer}</div>
+                    <div class="correct-was">Correct answer: ${m.correctAnswer}</div>
+                    <div class="why-text">${m.why}</div>
+                </div>
+            `;
+        });
+        missedHtml += `</div>`;
+    }
+
+    document.getElementById("mainContent").innerHTML = `
+        <div class="results-screen">
+            <h2>Test Complete!</h2>
+            <div class="results-score ${scoreClass}">${pct}%</div>
+            <div class="results-stats">
+                <div class="results-stat">
+                    <div class="stat-num">${state.testScore}</div>
+                    <div class="stat-label">Correct</div>
+                </div>
+                <div class="results-stat">
+                    <div class="stat-num">${state.testTotal - state.testScore}</div>
+                    <div class="stat-label">Missed</div>
+                </div>
+                <div class="results-stat">
+                    <div class="stat-num">${mins}:${secs.toString().padStart(2, "0")}</div>
+                    <div class="stat-label">Time</div>
+                </div>
+            </div>
+            ${missedHtml}
+            <button class="restart-btn" onclick="resetAndRestart()">Try Again</button>
+        </div>
+    `;
+}
+
+
+// ========================================================================
+// LEARN MODE LOGIC
+// The coaching brain — evaluates the user's choice and gives feedback
+// ========================================================================
+
+function handleLearnChoice(stepId) {
+    const phase = getPhase();
+    const expectedStep = phase.steps[state.currentStepIndex];
+    const chosenStep = phase.steps.find(s => s.id === stepId);
+
+    // Don't allow clicking completed steps
+    if (state.completedSteps.has(stepId)) return;
+
+    // CASE 1: They picked the expected next step — correct!
+    if (stepId === expectedStep.id) {
+        state.feedbackVisible = true;
+        state.feedbackType = "correct";
+        state.feedbackMessage = "Correct!";
+        state.feedbackDetail = `<strong>${chosenStep.action}</strong><br><br>${chosenStep.detail}<br><br><em>Why this step here:</em> ${chosenStep.why}`;
+
+        markStepComplete(stepId);
+        advanceToNextStep();
+        render();
+        return;
+    }
+
+    // CASE 2: It's a valid alternative (interchangeable step)
+    if (isAlternative(stepId)) {
+        state.feedbackVisible = true;
+        state.feedbackType = "correct";
+        state.feedbackMessage = "That works too!";
+        state.feedbackDetail = `<strong>${chosenStep.action}</strong> is interchangeable with <strong>${expectedStep.action}</strong> at this point — either order is fine.<br><br>${chosenStep.detail}`;
+
+        markStepComplete(stepId);
+        advanceToNextStep();
+        render();
+        return;
+    }
+
+    // CASE 3: They skipped a critical step — block them
+    const skippedCritical = getSkippedCriticalSteps(stepId);
+    if (skippedCritical.length > 0) {
+        const missed = skippedCritical[0];
+        state.feedbackVisible = true;
+        state.feedbackType = "blocked";
+        state.feedbackMessage = "Hold on — you skipped a critical step!";
+        state.feedbackDetail = `You need to do <strong>"${missed.action}"</strong> before <strong>"${chosenStep.action}"</strong>.<br><br><em>Why:</em> ${missed.why}`;
+
+        render();
+        return;
+    }
+
+    // CASE 4: Out of order but not dangerous — give a warning
+    state.feedbackVisible = true;
+    state.feedbackType = "warning";
+    state.feedbackMessage = "That step works here, but there's a better order.";
+    state.feedbackDetail = `Most coordinators do <strong>"${expectedStep.action}"</strong> first because:<br><br><em>${expectedStep.why}</em><br><br>You chose <strong>"${chosenStep.action}"</strong> — which isn't wrong, but the recommended order helps because of the reason above.`;
+
+    // Store the chosen step so we can mark it done if they click "continue"
+    state._warningChosenStep = stepId;
+
+    render();
+}
+
+// When user clicks "Got it, continue" on a warning
+function acceptWarningAndContinue() {
+    if (state._warningChosenStep) {
+        markStepComplete(state._warningChosenStep);
+        advanceToNextStep();
+        state._warningChosenStep = null;
+    }
+    state.feedbackVisible = false;
+    render();
+}
+
+// When user clicks "OK, let me fix that" on a blocked message
+function dismissFeedback() {
+    state.feedbackVisible = false;
+    render();
+}
+
+
+// ========================================================================
+// TEST MODE LOGIC
+// Multiple choice question generation, scoring, and results
+// ========================================================================
+
+function generateTestOptions(phase, correctStep) {
+    // Gather all steps from all phases that aren't already completed
+    const allSteps = [];
+    getProcedure().phases.forEach(p => {
+        p.steps.forEach(s => {
+            if (s.id !== correctStep.id && !state.completedSteps.has(s.id)) {
+                allSteps.push(s);
+            }
+        });
+    });
+
+    // Pick distractors — prefer steps from the same phase (harder), then from others
+    const samePhaseSteps = phase.steps.filter(s =>
+        s.id !== correctStep.id && !state.completedSteps.has(s.id)
+    );
+    const otherSteps = allSteps.filter(s =>
+        !samePhaseSteps.some(sp => sp.id === s.id)
+    );
+
+    let distractors = [];
+
+    // Try to get 1-2 from the same phase, rest from others
+    const shuffledSame = shuffle(samePhaseSteps);
+    const shuffledOther = shuffle(otherSteps);
+
+    // Get up to 2 from same phase
+    distractors.push(...shuffledSame.slice(0, 2));
+    // Fill remaining from other phases
+    const remaining = 3 - distractors.length;
+    distractors.push(...shuffledOther.slice(0, remaining));
+
+    // If we still don't have 3 (small phases), just grab whatever we can
+    if (distractors.length < 3) {
+        const all = shuffle([...samePhaseSteps, ...otherSteps]);
+        distractors = all.slice(0, 3);
+    }
+
+    // Build options array with the correct answer included
+    const options = distractors.map(s => ({ step: s, isCorrect: false }));
+    options.push({ step: correctStep, isCorrect: true });
+
+    // Also mark alternatives as correct
+    if (correctStep.alternatives) {
+        options.forEach(opt => {
+            if (correctStep.alternatives.includes(opt.step.id)) {
+                opt.isCorrect = true;
+            }
+        });
+    }
+
+    state.testOptions = shuffle(options);
+}
+
+function selectTestOption(index) {
+    if (state.testAnswered) return; // already answered, no changing
+    state.testSelectedOption = index;
+    render();
+}
+
+function submitTestAnswer() {
+    if (state.testSelectedOption === null || state.testAnswered) return;
+
+    state.testAnswered = true;
+    state.testTotal++;
+
+    const chosen = state.testOptions[state.testSelectedOption];
+    const correct = state.testOptions.find(o => o.isCorrect);
+
+    if (chosen.isCorrect) {
+        state.testScore++;
+        state.feedbackVisible = true;
+        state.feedbackType = "correct";
+        state.feedbackMessage = "Correct!";
+        state.feedbackDetail = `<strong>${chosen.step.action}</strong><br><br>${chosen.step.detail}<br><br><em>Why this step here:</em> ${chosen.step.why}`;
+    } else {
+        state.feedbackVisible = true;
+        state.feedbackType = "blocked";
+        state.feedbackMessage = "Not quite.";
+        state.feedbackDetail = `The correct answer was <strong>"${correct.step.action}"</strong>.<br><br><em>Why:</em> ${correct.step.why}<br><br>You chose <strong>"${chosen.step.action}"</strong> — which happens later in the procedure.`;
+
+        state.testMissed.push({
+            yourAnswer: chosen.step.action,
+            correctAnswer: correct.step.action,
+            why: correct.step.why
+        });
+    }
+
+    render();
+}
+
+function advanceAfterTest() {
+    const phase = getPhase();
+    const expectedStep = phase.steps[state.currentStepIndex];
+
+    markStepComplete(expectedStep.id);
+    advanceToNextStep();
+
+    // Reset test question state
+    state.testAnswered = false;
+    state.testSelectedOption = null;
+    state.testOptions = [];
+    state.feedbackVisible = false;
+
+    render();
+}
+
+
+// ========================================================================
+// STEP & PHASE ADVANCEMENT
+// Moving through the procedure
+// ========================================================================
+
+function markStepComplete(stepId) {
+    state.completedSteps.add(stepId);
+}
+
+function advanceToNextStep() {
+    const phase = getPhase();
+
+    // Find the next uncompleted step in this phase
+    let nextIndex = -1;
+    for (let i = 0; i < phase.steps.length; i++) {
+        if (!state.completedSteps.has(phase.steps[i].id)) {
+            nextIndex = i;
+            break;
+        }
+    }
+
+    if (nextIndex >= 0) {
+        // There are still steps in this phase
+        state.currentStepIndex = nextIndex;
+    } else {
+        // Phase complete — move to the next phase
+        state.currentPhaseIndex++;
+        state.currentStepIndex = 0;
+    }
+}
+
+function jumpToPhase(phaseIndex) {
+    // In test mode, no jumping allowed
+    if (state.mode === "test") return;
+
+    state.currentPhaseIndex = phaseIndex;
+
+    // Find the first uncompleted step in this phase
+    const phase = getPhase(phaseIndex);
+    if (phase) {
+        let firstUndone = phase.steps.findIndex(s => !state.completedSteps.has(s.id));
+        state.currentStepIndex = firstUndone >= 0 ? firstUndone : 0;
+    }
+
+    state.feedbackVisible = false;
+    render();
+}
+
+
+// ========================================================================
+// APP CONTROLS
+// Starting, resetting, mode switching, case changing
+// ========================================================================
+
+function startApp(mode) {
+    state.screen = "active";
+    state.mode = mode;
+    state.currentPhaseIndex = 0;
+    state.currentStepIndex = 0;
+    state.completedSteps = new Set();
+    state.feedbackVisible = false;
+    state.testScore = 0;
+    state.testTotal = 0;
+    state.testMissed = [];
+    state.testStartTime = Date.now();
+    state.testAnswered = false;
+    state.testSelectedOption = null;
+    state.testOptions = [];
+    render();
+}
+
+function switchMode(mode) {
+    if (mode === state.mode) return;
+
+    // Confirm with user that switching resets progress
+    if (state.completedSteps.size > 0) {
+        if (!confirm("Switching modes will reset your progress. Continue?")) return;
+    }
+
+    startApp(mode);
+}
+
+function changeCase(caseKey) {
+    if (caseKey === state.currentProcedure) return;
+    state.currentProcedure = caseKey;
+    startApp(state.mode);
+}
+
+function resetAndRestart() {
+    state.screen = "start";
+    render();
+}
+
+
+// ========================================================================
+// INITIALIZATION
+// Draw the start screen when the page first loads
+// ========================================================================
+
+render();
+
+</script>
+
+</body>
+</html>
